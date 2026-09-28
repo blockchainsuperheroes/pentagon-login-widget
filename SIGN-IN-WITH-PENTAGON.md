@@ -37,9 +37,16 @@ You still need an **App Key** (`X-PG-App-Key`) for your own API calls. Same requ
 | | What it is | Use it for |
 |---|---|---|
 | `ssoToken` | Site-scoped, 24h. Every site gets this. | `POST /sso/walletinfo`, `/sso/validate`, `/sso/user_roles` |
-| `token` | The login access token — the same one `POST /user/login` returns. **Pentagon's own sites only.** | `GET /user/info`, `GET /user/walletinfo`, `POST /user/aa/execute`, everything else that takes a Bearer token |
+| `token` | The login access token — the same one `POST /user/login` returns. **Pentagon's own domains only** (see below). | `GET /user/info`, `GET /user/walletinfo`, `POST /user/aa/execute`, everything else that takes a Bearer token |
 
 Both are also written to your own site's `localStorage` (`pg_sso_token`, `pg_token`), so a reload keeps the session. Read them with `PGSignIn.ssoToken()` / `PGSignIn.token()`.
+
+**Which domains get the login token.** "Pentagon's own domains" means these
+five **and every subdomain of them**: `pentagon.games`, `gunnies.io`,
+`etherfantasy.com`, `etherfantasy.io`, `nftmining.com`. So
+`tcg.etherfantasy.com` and `mine.pentagon.games` receive the login token;
+an unrelated domain receives only `ssoToken`. Your origin must still be
+registered either way.
 
 There is no refresh token. When a call returns 401, clear it and call `PGSignIn.open()` again.
 
