@@ -43,6 +43,24 @@ Both are also written to your own site's `localStorage` (`pg_sso_token`, `pg_tok
 
 There is no refresh token. When a call returns 401, clear it and call `PGSignIn.open()` again.
 
+### ⚠️ Calling the API from the browser needs your origin in the CORS allowlist
+
+Getting a client id registers you for **sign-in**. It does **not** add your origin to the
+identity API's CORS allowlist — those are two separate lists, and several registered sites
+are not on the second one. If they differ, a browser `fetch` to
+`api.account.pentagon.games` fails preflight even though sign-in worked perfectly.
+
+Check yours before you build:
+
+```bash
+curl -si -X OPTIONS https://api.account.pentagon.games/user/walletinfo   -H "Origin: https://your.site"   -H "Access-Control-Request-Method: GET"   -H "Access-Control-Request-Headers: authorization" | grep -i access-control-allow-origin
+```
+
+No header back means no browser access. **Prefer calling the API from your own server
+anyway** — pass the token to your backend, call identity there, and return only what the page
+needs. It avoids CORS entirely, and the page then shows a balance it cannot forge. If you
+genuinely need browser-side calls, ask for a CORS entry when you request your client id.
+
 ## API
 
 | Call | Does |
@@ -82,5 +100,6 @@ Worth knowing, because it's why this is the only supported way to embed Pentagon
 | "isn't approved…" | Origin not registered, or it doesn't match exactly (www, subdomain, http vs https). |
 | `ok: true` but no `token` | Expected on third-party sites: use `ssoToken` with the `/sso/*` endpoints. |
 | 401 on `/user/*` | Token expired. Clear it and sign in again. |
+| CORS error calling the API | Your origin isn't in the API's CORS allowlist (separate from the client id). Call identity from your server instead — see above. |
 
 Questions: nftprof@pentagon.games. API reference: https://blockchainsuperheroes.github.io/pg-identity-docs/
