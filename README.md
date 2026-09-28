@@ -2,6 +2,20 @@
 
 Reference implementation for integrating Pentagon Games authentication into your app.
 
+> ## Start here: [Sign in with Pentagon](SIGN-IN-WITH-PENTAGON.md)
+>
+> One script, on any approved site. Your users sign in without leaving your page and you
+> get a token you can use straight away — no password handling, captcha, sign-up,
+> password reset or app-approval flow to build yourself.
+>
+> ```html
+> <script src="https://pentagon.games/pgai/web-local-app/pg-signin.js"
+>         data-client-id="YOUR_CLIENT_ID"></script>
+> ```
+>
+> The rest of this README is the hand-rolled alternative. It still works, and it is the
+> right choice if you need full control of the form (or you're server-side / CLI).
+
 **Do NOT redirect users to pentagon.games/sign-in.** Build your login form inside your app and call the Pentagon Identity API directly.
 
 ## Sign-In Methods
