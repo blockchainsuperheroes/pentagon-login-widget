@@ -204,9 +204,48 @@
       .then(function (d) {
         var u = (d && (d.result || d.data || d)) || {};
         st.mm = u.mm_address || null; st.penai = u.penai_address || null;
-        st.username = u.username || null; emit();
+        st.username = u.username || null;
+        readPNS(u); emit();
       }).catch(function () {});
   }
+
+  /* PNS (nftprof: "it should say signed in as nftprof (pns), and if user is
+     not on pns, get pns now"). A PNS name is the account's identity when it
+     is minted AND spatially bound to the account's wallet (mm_address) —
+     that is the rule login resolution uses (pg-identity-docs, "PNS Login").
+     There is no on-chain reverse lookup, so: the names that wallet owns from
+     PNS's own index (the same call pns.pentagon.games "My Names" makes), then
+     each one's binding confirmed on-chain, since the index is a cache.
+     st.pns: the name; st.pnsKnown: we KNOW the answer. Any failed read leaves
+     pnsKnown false and the panel says nothing — never "Get PNS" to someone
+     who may already have one. */
+  var PNS_API = 'https://api.peg.gg/api/nft/pegnames/owner/';
+  var PNS_REG = '0xf97eb9f8293d1fd5587a809eb74518c300738d07';
+  var PNS_SITE = 'https://pns.pentagon.games';
+  function readPNS(u) {
+    st.pns = null; st.pnsKnown = false;
+    var given = u.pns_name || u.pns || u.pnsName;          // if identity ever returns it, take it
+    if (given) { st.pns = String(given).toLowerCase(); st.pnsKnown = true; return; }
+    var mm = st.mm && String(st.mm).toLowerCase();
+    if (!mm) { st.pnsKnown = true; return; }              // no wallet on the account: nothing can be bound to it
+    fetch(PNS_API + mm).then(function (r) { if (!r.ok) throw new Error('pns'); return r.json(); })
+      .then(function (d) {
+        if (!d || !d.success) throw new Error('pns');
+        var names = (d.names || []).slice(0, 8);
+        return Promise.all(names.map(function (n) {
+          var id = BigInt(n.tokenId).toString(16); while (id.length < 64) id = '0' + id;
+          return post(RPC, 'eth_call', [{ to: PNS_REG, data: '0x0dbfe0bf' + id }, 'latest'])   // spatialBinding(uint256)
+            .then(function (r) { return r && r.length >= 66 ? '0x' + r.slice(-40) : null; },
+                  function () { return (n.spatialBinding || '').toLowerCase() || null; })
+            .then(function (b) { return b && b.toLowerCase() === mm ? String(n.name).toLowerCase() : null; });
+        }));
+      })
+      .then(function (bound) {
+        if (st.mm && String(st.mm).toLowerCase() !== mm) return;  // account changed meanwhile
+        st.pns = bound.filter(Boolean)[0] || null; st.pnsKnown = true; emit();
+      }).catch(function () {});
+  }
+  function whoName() { return st.pns || st.username; }
 
   /* Offer "approve in my Pentagon AI app" ONLY when the backend says this
      account has one. A phone or Telegram wallet is invisible to EIP-6963, so
@@ -363,7 +402,7 @@
      the ACCOUNT's wallet, so it leaves with the account. */
   function forgetAccount() {
     st.signedIn = false; st.points = null; st.pointsBlocked = false;
-    st.mm = st.penai = null; st.username = null; st.roaming = null; st.notice = ''; st.err = '';
+    st.mm = st.penai = null; st.username = null; st.pns = null; st.pnsKnown = false; st.roaming = null; st.notice = ''; st.err = '';
     if (st.phone) { st.phone = false; st.acct = st.chain = st.pc = st.ethPc = st.eth = null; }
   }
   /* Sign-in and sign-out that happen OUTSIDE the pill: the host's own Log in
@@ -627,7 +666,7 @@
                { label: 'Swap on PentaSwap', href: 'https://pentaswap.io' }], tiny: ethPcTiny() };
     }
     if (st.points > 0) {
-      return { key: 'points', ok: true, head: (st.username ? 'Hi ' + st.username + ' — ' : 'You have ') + fmt(st.points, 0) + ' ' + POINTS_LABEL + '',
+      return { key: 'points', ok: true, head: (whoName() ? 'Hi ' + whoName() + ' — ' : 'You have ') + fmt(st.points, 0) + ' ' + POINTS_LABEL + '',
         sub: 'Spend them across Pentagon apps — no wallet or gas needed. In-ecosystem only: they cannot be withdrawn, bridged or cashed out.',
         acts: withPhone([{ label: 'Redeem for NFTs', href: 'https://pentagon.games/redeem' }, { label: 'Top up more', href: HOME + '/topup', action: 'topup' }]),
         // Signing in never hides connecting a wallet (nftprof): the two stack.
@@ -738,6 +777,9 @@
     + '.pill .ptseg{display:inline-flex;align-items:center;gap:7px}'
     + '@media (max-width:359px){.pill .ptseg{display:none}}'
     + '.acct{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px;padding:0 0 10px;border-bottom:1px solid var(--pg-border,#1e2b22);font-size:13px}'
+    + '.pns{display:inline-block;margin-left:4px;padding:1px 5px;border:1px solid var(--pg-accent,#00ff66);border-radius:4px;font:700 9.5px/1.3 ui-monospace,monospace;letter-spacing:.06em;color:var(--pg-accent-text,#4dff94);text-decoration:none;vertical-align:1px}'
+    + '.getpns{margin-left:6px;font-size:11.5px;white-space:nowrap}'
+    + '.g-pns{font-size:12px;color:var(--pg-text-muted,#7e9486);margin:-2px 0 10px}.g-pns .pns{margin:0 4px 0 0}.g-pns .getpns{margin:0}'
     + '.acct b{color:var(--pg-accent-text,#4dff94)}.acct .ab{display:flex;flex-direction:column;gap:3px;min-width:0}.acct .ap{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;color:var(--pg-text,#e8f5ec)}'
     + '.pill .net{color:var(--pg-text-muted,#7e9486);font-weight:500}.pill .dv{width:1px;height:14px;background:var(--pg-border-strong,#2c4033)}'
     + '@media (max-width:480px){.pill .net,.pill .dv{display:none}}'
@@ -782,6 +824,7 @@
     return (st.err ? '<div class="err">' + esc(st.err) + '</div>' : '')
       + (sum ? '<div class="g-sum">' + esc(sum) + '</div>' : '')
       + '<div class="g-head' + (r.ok ? ' ok' : '') + '">' + esc(r.head) + '</div>'
+      + (r.key === 'points' && st.signedIn ? pnsLine() : '')
       + (r.sub ? '<div class="g-sub">' + esc(r.sub) + '</div>' : '')
       + (r.acts.length ? '<div class="g-acts">' + r.acts.map(actHTML).join('') + '</div>' : '')
       + (r.tiny ? '<div class="g-tiny"><a href="' + esc(r.tiny.href) + '"' + (r.tiny.action ? ' data-a="' + r.tiny.action + '"' : '') + '>' + esc(r.tiny.label) + '</a></div>' : '');
@@ -791,6 +834,19 @@
      pill entirely — and the pill is the only login on the page. */
   /* BOX 1 — the account (nftprof: "Points PG login good"). Its Points wear
      the magenta Points mark. */
+  /* Beside the name: a PNS tag when the name IS the account's PNS name, else
+     — only once we know there is none — "Get PNS", in a new tab. */
+  function pnsHTML() {
+    if (st.pns) return ' <a class="pns" href="' + PNS_SITE + '" target="_blank" rel="noopener" title="Your Pentagon Name Service name">PNS</a>';
+    if (st.pnsKnown) return ' <a class="getpns" href="' + PNS_SITE + '" target="_blank" rel="noopener">Get PNS ↗</a>';
+    return '';
+  }
+  /* The same, as its own line under "Hi name —" when no wallet is connected. */
+  function pnsLine() {
+    if (st.pns) return '<div class="g-pns"><a class="pns" href="' + PNS_SITE + '" target="_blank" rel="noopener">PNS</a> your on-chain name</div>';
+    if (st.pnsKnown) return '<div class="g-pns">No PNS name yet · <a class="getpns" href="' + PNS_SITE + '" target="_blank" rel="noopener">Get PNS ↗</a></div>';
+    return '';
+  }
   function acctHTML() {
     if (!st.acct) return '';
     /* Connected but logged out: the pill is the page's only login, so the top
@@ -800,7 +856,7 @@
       + '<a href="' + SIGN_IN + '" data-a="signin">Log in with Pentagon</a></div>' : '';
     /* Two rows: who, then their Points (nftprof: "either wrap points to 2nd
        row or ..."). On one line the number broke from its label at 310px. */
-    return '<div class="box acct"><span class="ab"><span>Signed in as <b>' + esc(st.username || 'your account') + '</b></span>'
+    return '<div class="box acct"><span class="ab"><span>Signed in as <b>' + esc(whoName() || 'your account') + '</b>' + pnsHTML() + '</span>'
       + (st.points != null ? '<span class="ap">' + mark(PTM, 14) + ' ' + fmt(st.points, 0) + ' ' + esc(POINTS_LABEL) + '</span>' : '') + '</span>'
       + '<a href="' + HOME + '/topup" data-a="topup">Top up</a></div>';
   }
@@ -911,7 +967,7 @@
          3,690 Pts"). The pink mark belongs to the number, never the name —
          the name is in the panel's greeting. */
       if (st.points != null && (st.signedIn || st.points > 0)) label = '<b>' + fmt(st.points, 0) + '</b> <span class="pl">' + esc(POINTS_SHORT) + '</span>';
-      else if (st.signedIn) label = st.username ? '<b class="nm">' + esc(st.username) + '</b>' : 'Your account';
+      else if (st.signedIn) label = whoName() ? '<b class="nm">' + esc(whoName()) + '</b>' : 'Your account';
       else label = HAS_LOGIN ? 'Log in' : 'Connect wallet';
       /* Points wear the magenta Points mark (nftprof: "disconnected don't show
          the Points logo"); signed out, the brand mark stays. */
@@ -1036,7 +1092,7 @@
     topUp: topUp,
     mount: function (el) { el.hasAttribute('data-pc-guide') ? mountGuide(el) : mountPill(el); },
     unmount: unmount, attach: attach, detach: detach,
-    version: '1.0.7'
+    version: '1.0.8'
   };
   window.PCConnector = api;
 
