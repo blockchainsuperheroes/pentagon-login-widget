@@ -5,8 +5,16 @@ hand-rolled login form, every "sign in with wallet" button, and the older
 guidance in this repo and in `pg-identity-docs` that told you to build your own
 form. If something you maintain has its own Pentagon login, it is out of date.
 
-One component gives a site: **Pentagon sign-in, the user's Points, and
-optionally a connected web3 wallet.** You do not implement any of it.
+**Pentagon login is now the pill**, and the pill is the **gateway to the
+wallets** — ours and everyone else's. One component gives a site: Pentagon
+sign-in, the user's Points, and optionally a connected web3 wallet (PGAI,
+MetaMask, Rabby, or a Pentagon AI app approving from a phone). You do not
+implement any of it, and there is no separate "sign in with wallet" button to
+build: connecting a wallet *is* one of the ways in.
+
+This is a deliberate simplification. Sign-in, balance display and wallet
+connection used to be three separate integrations that every site built
+differently. They are now one step.
 
 ```html
 <div data-pc-connector></div>
