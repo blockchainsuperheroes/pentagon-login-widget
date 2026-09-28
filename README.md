@@ -2,7 +2,23 @@
 
 Reference implementation for integrating Pentagon Games authentication into your app.
 
-> ## Start here: [Sign in with Pentagon](SIGN-IN-WITH-PENTAGON.md)
+> # ⬠ THE STANDARD: [Pentagon Games Identity Standard — the login pill](PENTAGON-LOGIN-STANDARD.md)
+>
+> **Required for every Pentagon front-end.** One component: Pentagon sign-in,
+> the user's Points, and optionally a connected web3 wallet. It supersedes every
+> hand-rolled login form and "sign in with wallet" button, including the one
+> documented further down this README.
+>
+> ```html
+> <div data-pc-connector></div>
+> <script src="https://pentagon.games/connector/pc-connector.js"
+>         data-client-id="YOUR_CLIENT_ID" defer></script>
+> ```
+>
+> Read the standard first. The pages below are reference material for the pieces
+> it is built from.
+
+> ## The sign-in popup alone: [Sign in with Pentagon](SIGN-IN-WITH-PENTAGON.md)
 >
 > One script, on any approved site. Your users sign in without leaving your page and you
 > get a token you can use straight away — no password handling, captcha, sign-up,
@@ -13,8 +29,9 @@ Reference implementation for integrating Pentagon Games authentication into your
 >         data-client-id="YOUR_CLIENT_ID"></script>
 > ```
 >
-> The rest of this README is the hand-rolled alternative. It still works, and it is the
-> right choice if you need full control of the form (or you're server-side / CLI).
+> The rest of this README is the hand-rolled alternative. It is **no longer the
+> recommended path for a website** — see the standard above. It remains correct
+> for server-side and CLI integrations, which have no browser to show a pill in.
 
 **Do NOT redirect users to pentagon.games/sign-in.** Build your login form inside your app and call the Pentagon Identity API directly.
 
