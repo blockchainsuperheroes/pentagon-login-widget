@@ -26,6 +26,13 @@ On `pentagon.games` omit `data-client-id`. Everywhere else it is required, and
 your **exact** origin must be registered first (scheme + host; `www` and every
 subdomain are separate). Ask nftprof.
 
+**See every state live: [pentagon.games/connector/](https://pentagon.games/connector/)**
+— the shipping pill rendered in each state this document describes, from
+fixture data, so you can see what your users will see without owning the
+account, wallet or phone each state needs. Pages that move funds pin a
+versioned build with SRI instead of the URL above: see
+[CONNECTOR.md](https://github.com/blockchainsuperheroes/pentagon-games-website/blob/main/docs/CONNECTOR.md).
+
 ---
 
 ## Why a pill and not a login button
@@ -61,7 +68,14 @@ balances has reimplemented the problem.
 6. **SHOULD call the identity API from your server, not the browser.** Being
    registered for sign-in does **not** put your origin in the API's CORS
    allowlist — they are separate lists and they differ. A server-side read also
-   means your page shows a balance it cannot forge.
+   means your page shows a balance it cannot forge. Hand the Points you read to
+   the pill with `PCConnector.setPoints(n)`, so requirement 2 holds on an
+   origin the API will not answer.
+7. **MUST sign out through the pill.** If your page has its own account menu,
+   its Sign out calls `PCConnector.signOut()`. That clears both `pg_token` and
+   `pg_sso_token` and fires `pg:auth`. A second, hand-rolled sign-out that
+   clears only one of them leaves the user signed in to every other Pentagon
+   site on that machine while your page says they left.
 
 ### The one exception: native and in-app surfaces
 
@@ -79,8 +93,8 @@ ask before building.
 |---|---|---|
 | **Pentagon account** | The identity. Works with no wallet at all. | Sign-in, Points |
 | **Points (PG Balance)** | Custodial, non-transferable, spend-only in-ecosystem. Bought, not earned. | A balance in the pill |
-| **Connected web3 wallet** | The user's own, optional | `$PC` on Pentagon Chain and on Ethereum |
-| **PGAI wallet** | Self-custody, for users who have no wallet. **Pentagon Chain 3344 only.** | Same as any connected wallet |
+| **Connected web3 wallet** | The user's own, optional | `$PC` gas on Pentagon Chain, `$PC` on Ethereum (the figure, with **Bridge to Pentagon Chain** as the main action), and **the connected network, named on the pill** |
+| **PGAI wallet** | Self-custody, for users who have no wallet. **Pentagon Chain 3344 only.** | Its Pentagon Chain gas. **Never** an Ethereum prompt: PGAI cannot sign on Ethereum, so the pill never sends it to the bridge |
 
 **The account is the baseline; a web3 wallet is optional.** A user with no
 wallet must be able to sign in, see their Points, and spend them. Sites that
@@ -117,9 +131,16 @@ EIP-6963 — the browser genuinely cannot detect it — so this cannot be guesse
 It fails closed: on any error the option is hidden rather than dead-ending
 someone who never installed one.
 
+**The phone wallet's balance works today.** When a signed-in account has a
+Pentagon AI wallet (`penai_address` on `user/info`) and no wallet is connected,
+the pill offers "Show my Pentagon AI wallet": it reads that address's balances
+directly — no provider, no connection, no signature — names the wallet and its
+network, and labels itself read-only. No PGAI address on the account, no offer.
+
 **Roaming sign-in works today. Roaming *signing* — approving a transaction on
 your phone from a third-party page — does not exist yet and is deferred.**
-It is securely buildable; see `PILL-AND-WALLETS.md` in the website repo for the
+This is canonical (nftprof, 2026-09-28): deferred, not cancelled. It is
+securely buildable; see `PILL-AND-WALLETS.md` in the website repo for the
 conditions. Do not design a flow that depends on it.
 
 ---
