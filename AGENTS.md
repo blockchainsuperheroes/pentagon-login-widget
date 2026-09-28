@@ -56,7 +56,7 @@ more.
    Until that works, the pill says it couldn't read balances.
 2. **CSP entries**, if you send a CSP:
    - `script-src https://pentagon.games`
-   - `connect-src https://rpc.pentagon.games https://api.account.pentagon.games https://ethereum-rpc.publicnode.com https://eth.llamarpc.com https://cloudflare-eth.com`
+   - `connect-src https://rpc.pentagon.games https://api.account.pentagon.games https://api.peg.gg https://ethereum-rpc.publicnode.com https://eth.llamarpc.com https://cloudflare-eth.com`
 
    All brand marks are inlined, so no image rule is needed.
 3. **Pop-ups allowed from a click.** Sign-in (off pentagon.games), Top up and
@@ -122,6 +122,20 @@ Three boxes:
 1. **Account** — "Signed in as **name**", with the Points on a row below
    (pink mark, number, "Points"), and **Top up**. Logged out: "Not logged in to
    Pentagon · Log in with Pentagon".
+   - **PNS (1.0.8):** when the account has a PNS name, it is the name shown,
+     with a `PNS` tag: `Signed in as nftprof [PNS]`. With none: `Get PNS ↗`,
+     opening pns.pentagon.games **in a new tab**. With no wallet connected, the
+     same appears under "Hi name —".
+   - A name counts only when it is minted **and** spatially bound to the
+     account's wallet (`mm_address`), the rule login resolution uses. There is
+     no on-chain reverse lookup, so the pill asks PNS's index
+     (`api.peg.gg/api/nft/pegnames/owner/<mm_address>`, the same call "My
+     Names" on pns.pentagon.games makes), then confirms each binding on-chain
+     (`spatialBinding(uint256)` on the registry
+     `0xf97EB9f8293D1FD5587a809Eb74518c300738d07`, Pentagon Chain).
+   - **Fails closed:** if the index or the chain can't be read (for example
+     api.peg.gg refusing your origin), neither the tag nor "Get PNS" shows, so
+     nobody who has a name is told to get one.
 2. **NOW** — the connected wallet (name, address → explorer link), the PC on
    the chain it is on now, with the big neon mark and that chain's main action:
    - on Ethereum, **Bridge to Pentagon Chain**;
@@ -157,7 +171,7 @@ before `DOMContentLoaded`.
 | `PCConnector.onChange(fn)` | Called whenever that state changes. |
 | `PCConnector.connect()` / `switchToPentagonChain()` | Open the pill's connect, or request the chain switch. |
 | `PCConnector.mount(el)` / `unmount(el)` | SPAs that re-render the nav: `unmount` before the element goes, `mount` when it is back. |
-| `PCConnector.version` | `'1.0.7'` |
+| `PCConnector.version` | `'1.0.8'` |
 
 **Event:** `window` receives `pg:auth` (`CustomEvent`, `detail.ok` /
 `detail.signedOut`) on sign-in and sign-out. Listen for it and your page state
@@ -340,8 +354,8 @@ add/switch network, and one signature of Pentagon's login message.
 ## 10. Money pages: pin a version with SRI
 
 ```html
-<script src="https://pentagon.games/connector/pc-connector-1.0.7.js"
-        integrity="sha384-WlSGBo2QAp6pQ+sCk0kljxGgSv0nshjNNu5C775H1zUVnfwVHsl/Hjitj2Vosli1"
+<script src="https://pentagon.games/connector/pc-connector-1.0.8.js"
+        integrity="sha384-odQYTRA6u8AX4U6yHPSJvdf0qZjeW26xVsnSHzLnBoTI9ELWKlNnB7lXYin34r0N"
         crossorigin="anonymous" data-client-id="YOUR_CLIENT_ID" defer></script>
 ```
 
@@ -356,6 +370,7 @@ Upgrading is your decision, made when you want what a newer row adds.
 - [ ] Origin registered with identity; `data-client-id` set
 - [ ] Origin on the RPC allowlist (curl check passes)
 - [ ] Points readable (API allowlist), **or** `setPoints()` from the server
+- [ ] PNS readable: `api.peg.gg` answers your origin (else the PNS tag / Get PNS link simply don't show)
 - [ ] CSP entries added (if you send a CSP)
 - [ ] Old login buttons, Points badges and balance chips removed from the nav
 - [ ] Page "Log in" prompts call `PCConnector.signIn()` in the click
