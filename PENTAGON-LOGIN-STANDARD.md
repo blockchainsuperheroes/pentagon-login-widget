@@ -58,6 +58,15 @@ balances has reimplemented the problem.
 2. **MUST display the pill's content** — balances included. You **MAY**
    re-theme it (the pill inherits your CSS custom properties). You **MUST NOT**
    take the login and discard the balance display.
+   And the pill is the **only** login widget on the page: you **MUST NOT**
+   render a second account chip, Points display, Log in / Sign up button or
+   Top up button beside it. The pill names the account ("nftprof1 · 3,690
+   Points"), reads "Log in" when signed out, and carries sign-in, Top up and
+   sign-out. Two widgets showing the same balance is the drift this standard
+   exists to stop — pentagon.games itself shipped exactly that, and removed it.
+   Other prompts on your page that ask someone to log in call
+   `PCConnector.signIn()`; they do not open a login of their own.
+   The pill shows at **every width** — on a phone it is often the only way in.
 3. **MUST NOT redirect users to the wallet app to log in.** Sign-in is a popup
    over your page. If the popup is blocked, re-prompt from a button; never
    fall back to navigating away.
