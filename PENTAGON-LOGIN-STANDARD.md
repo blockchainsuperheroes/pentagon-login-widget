@@ -124,6 +124,11 @@ account regardless.
 message and identity returns the account that owns that address. If no account
 exists, the pill offers to create one and connect it. This **is** the old "sign
 in with wallet", with one fewer click — the user connects, and sign-in follows.
+In the pill this is **one button**: a signed-out visitor sees only *Connect
+wallet* and *Log in with Pentagon*. Connect connects, then asks the wallet to
+sign Pentagon's login message; if an account owns the wallet they are logged
+in, and if they decline they simply stay connected. There is no separate
+"connect & sign in" button to choose between.
 
 There is deliberately **no address→account lookup**. The signature is what
 proves control, so you can only learn a wallet has a Pentagon account if you
@@ -175,8 +180,8 @@ conditions. Do not design a flow that depends on it.
 the pill.**
 
 The pill ships on every page of every Pentagon site. It must stay small,
-read-only, and safe to embed anywhere; it never asks for a signature and never
-moves anything, and that property is what makes it uncontroversial to drop into
+and safe to embed anywhere; it never moves anything and never sends a
+transaction (its one signature is Pentagon's login message), and that property is what makes it uncontroversial to drop into
 a partner's nav. An agent is the opposite: stateful, conversational, and able
 to take actions, which needs the wallet's trust context and per-request
 approval. Putting it in the pill would put an acting surface on every partner
