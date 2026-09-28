@@ -15,8 +15,10 @@ Reference implementation for integrating Pentagon Games authentication into your
 >         data-client-id="YOUR_CLIENT_ID" defer></script>
 > ```
 >
-> Read the standard first. The pages below are reference material for the pieces
-> it is built from.
+> Read the standard first, then **[AGENTS.md](AGENTS.md)**: the step-by-step
+> integration guide (install, API, design decisions, compact/mobile behaviour,
+> bridge and top-up caveats, adoption checklist). The pages below are reference
+> material for the pieces it is built from.
 
 > ## The sign-in popup alone: [Sign in with Pentagon](SIGN-IN-WITH-PENTAGON.md)
 >
