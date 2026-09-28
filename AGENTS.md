@@ -122,7 +122,7 @@ Three boxes:
 1. **Account** — "Signed in as **name**", with the Points on a row below
    (pink mark, number, "Points"), and **Top up**. Logged out: "Not logged in to
    Pentagon · Log in with Pentagon".
-   - **PNS (1.0.9):** when the account has a PNS name, it is the name shown,
+   - **PNS (1.1.0):** when the account has a PNS name, it is the name shown,
      with a `PNS` tag: `Signed in as nftprof [PNS]`. With none: `Get PNS ↗`,
      opening pns.pentagon.games **in a new tab**. With no wallet connected, the
      same appears under "Hi name —".
@@ -145,6 +145,18 @@ Three boxes:
    **Disconnect wallet**.
 3. **ALSO** — the PC on the *other* chain, dimmed. It lights up when the NOW
    chain has 0 and the other chain has some, because then it matters.
+
+**Link this wallet (1.1.0, pentagon.games only):** signed in, a wallet connected,
+and identity says the account has **no** linked wallet (`mm_address` empty) → the
+NOW box offers "Your account has no linked wallet yet. **Link this one…**". It opens
+a confirmation: "⚠ One-time link — pick carefully", what it means (the wallet can
+log you in; PNS names bind to it), and **"You can't change or unlink it yourself"**
+— unlinking takes a support ticket on Pentagon's Discord, gated members only.
+"I understand this link is permanent" must be ticked before one free signature of
+identity's bind message (`POST user/bind_metamask`). **This is the one place a
+wallet gets linked**: the Pentagon AI apps show the linked wallet read-only and
+send "Link a wallet" to pentagon.games (products-wallet-rn SPEC §25c-ii). Don't
+build a bind flow on your own site.
 
 **Footer (signed in):** **Account & privacy ↗** opens `pentagon.games/account` in a
 new tab, on its own row above **Sign out** / **Disconnect wallet**. Privacy decides
@@ -179,7 +191,7 @@ before `DOMContentLoaded`.
 | `PCConnector.onChange(fn)` | Called whenever that state changes. |
 | `PCConnector.connect()` / `switchToPentagonChain()` | Open the pill's connect, or request the chain switch. |
 | `PCConnector.mount(el)` / `unmount(el)` | SPAs that re-render the nav: `unmount` before the element goes, `mount` when it is back. |
-| `PCConnector.version` | `'1.0.9'` |
+| `PCConnector.version` | `'1.1.0'` |
 
 **Event:** `window` receives `pg:auth` (`CustomEvent`, `detail.ok` /
 `detail.signedOut`) on sign-in and sign-out. Listen for it and your page state
@@ -336,7 +348,9 @@ have a "value" or are "worth" anything. The pill's copy already follows this.
 If you relabel with `data-points-label`, keep it neutral.
 
 The pill **never moves anything**. Its only wallet requests are connect,
-add/switch network, and one signature of Pentagon's login message.
+add/switch network, one signature of Pentagon's login message, and (1.1.0,
+pentagon.games only) the one-time "link this wallet" signature of identity's
+bind message — only after the user confirms it is permanent.
 
 ---
 
@@ -362,8 +376,8 @@ add/switch network, and one signature of Pentagon's login message.
 ## 10. Money pages: pin a version with SRI
 
 ```html
-<script src="https://pentagon.games/connector/pc-connector-1.0.9.js"
-        integrity="sha384-V2yXKpuFh8lRoukEkJIyGrBKC22/WO9/4pY31UdrrGevzc9CkXpul/+4JsEyJisN"
+<script src="https://pentagon.games/connector/pc-connector-1.1.0.js"
+        integrity="sha384-7D5DZJE9+If+3I6DD2vFDIZaODA2753ilrKXIipBIGVDqKLbedCVYXB9RKpZMkhH"
         crossorigin="anonymous" data-client-id="YOUR_CLIENT_ID" defer></script>
 ```
 

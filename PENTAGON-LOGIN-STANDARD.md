@@ -181,7 +181,8 @@ the pill.**
 
 The pill ships on every page of every Pentagon site. It must stay small,
 and safe to embed anywhere; it never moves anything and never sends a
-transaction (its one signature is Pentagon's login message), and that property is what makes it uncontroversial to drop into
+transaction (its signatures are Pentagon's login message and, on pentagon.games
+only, a confirmed one-time wallet-link message), and that property is what makes it uncontroversial to drop into
 a partner's nav. An agent is the opposite: stateful, conversational, and able
 to take actions, which needs the wallet's trust context and per-request
 approval. Putting it in the pill would put an acting surface on every partner

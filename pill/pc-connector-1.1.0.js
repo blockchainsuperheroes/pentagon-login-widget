@@ -89,6 +89,8 @@
     open: false, picking: false, err: '', notice: '',
     pending: '',                            // a wallet we are waiting on to answer a connect
     signing: false,                         // asking the wallet to sign the login message
+    infoKnown: false,                       // user/info answered: st.mm null then MEANS "no linked wallet"
+    link: '', linkAddr: null, linkAck: false, linkErr: '', justLinked: null,   // one-time wallet link (1.1.0)
     attached: false, hostConnect: null      // set by attach(): the host owns connect/disconnect
   };
   var pills = [], guides = [], listeners = [];
@@ -202,9 +204,12 @@
     fetch(API + '/user/info', { headers: { Authorization: 'Bearer ' + t } })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (d) {
-        var u = (d && (d.result || d.data || d)) || {};
+        /* No answer is not "no wallet, no PNS": leave everything unknown, so
+           neither "Get PNS" nor "Link this wallet" is offered on a guess. */
+        if (!d) return;
+        var u = d.result || d.data || d;
         st.mm = u.mm_address || null; st.penai = u.penai_address || null;
-        st.username = u.username || null;
+        st.username = u.username || null; st.infoKnown = true;
         readPNS(u); emit();
       }).catch(function () {});
   }
@@ -246,6 +251,63 @@
       }).catch(function () {});
   }
   function whoName() { return st.pns || st.username; }
+
+  /* Link the connected wallet to the account (nftprof, 2026-09-28: "pill link
+     the wallet"). identity's user/bind_metamask makes it the account's
+     mm_address — a login credential and the address a PNS name binds to.
+     It is ONE-TIME: identity refuses a second address, and undoing it takes a
+     support ticket on Pentagon's Discord, open to gated members only. So it
+     sits behind its own confirmation with a required "I understand", and is
+     offered only when we KNOW the account has no linked wallet. On
+     pentagon.games only: that is where the pill holds a Bearer token. The
+     Pentagon AI apps send people here to do it (products-wallet-rn SPEC §25). */
+  var DISCORD = 'https://discord.gg/pentagongamesxp';
+  function canLink() {
+    if (!SAME_ORIGIN_LOGIN || !st.signedIn || !st.infoKnown || st.mm || !st.acct || st.phone || !st.p) return false;
+    return !(st.penai && String(st.penai).toLowerCase() === String(st.acct).toLowerCase());   // the PGAI wallet is bound separately
+  }
+  function linkStart() { if (!canLink()) return; st.link = 'confirm'; st.linkAddr = st.acct; st.linkAck = false; st.linkErr = ''; emit(); }
+  function linkGo() {
+    if (st.link !== 'confirm' || !st.linkAck || st.acct !== st.linkAddr || !canLink()) return;
+    var addr = st.acct, p = st.p, msg = 'Sign up to Pentagon Games,' + Math.floor(Date.now() / 1000);   // identity's bind message (5-minute window)
+    var hex = '0x' + Array.prototype.map.call(new TextEncoder().encode(msg), function (b) { return ('0' + b.toString(16)).slice(-2); }).join('');
+    st.link = 'signing'; st.linkErr = ''; emit();
+    p.request({ method: 'personal_sign', params: [hex, addr] })
+      .then(function (sig) {
+        st.link = 'saving'; emit();
+        return loginToken().then(function (t) {
+          if (!t) throw new Error('Your Pentagon session ended. Log in again, then link.');
+          return fetch(API + '/user/bind_metamask', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t },
+            body: JSON.stringify({ address: addr, message: msg, signature: sig, login_from: 'pentagon-pill' }) })
+            .then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { return { ok: r.ok, d: d || {}, t: t }; }); });
+        });
+      })
+      .then(function (x) {
+        // Declines arrive as HTTP 200 {status:false, message} too.
+        if (!x.ok || x.d.status === false || x.d.success === false) throw new Error(x.d.message || 'Pentagon didn’t accept the link.');
+        st.link = ''; st.linkAck = false; st.mm = addr; st.justLinked = addr; st.notice = '';
+        readOwnAddresses(x.t); emit();
+      })
+      .catch(function (e) {
+        st.link = 'confirm';
+        st.linkErr = e && e.code === 4001 ? '' : ((e && e.message) || 'Linking failed. Nothing was changed.');
+        emit();
+      });
+  }
+  function linkHTML() {
+    var a = shortAddr(st.acct), w = brand(st.w).name || 'this wallet';
+    if (st.link === 'signing') return '<div class="box now lk"><div class="big-note">Check your wallet</div><div class="sub">Sign the message in ' + esc(w) + ' to link ' + esc(a) + '. It’s free and moves nothing.</div></div>';
+    if (st.link === 'saving') return '<div class="box now lk"><div class="big-note">Linking…</div></div>';
+    return '<div class="box now lk">'
+      + '<div class="lk-h">⚠ One-time link — pick carefully</div>'
+      + '<div class="lk-a">' + esc(w) + ' · <span class="mono">' + esc(a) + '</span></div>'
+      + '<p>This wallet becomes your Pentagon account’s linked wallet. It can log you in, and it’s the address your PNS name binds to.</p>'
+      + '<p><b>You can’t change or unlink it yourself.</b> Unlinking takes a support ticket on <a href="' + DISCORD + '" target="_blank" rel="noopener">Pentagon’s Discord ↗</a>, open to gated members only.</p>'
+      + '<button class="ack" data-a="link-ack" type="button" role="checkbox" aria-checked="' + (st.linkAck ? 'true' : 'false') + '"><span class="bx">' + (st.linkAck ? '✓' : '') + '</span>I understand this link is permanent</button>'
+      + (st.linkErr ? '<div class="err">' + esc(st.linkErr) + '</div>' : '')
+      + '<div class="g-acts"><button class="btn" data-a="link-go" type="button"' + (st.linkAck ? '' : ' disabled') + '>Link ' + esc(a) + '</button>'
+      + '<button class="btn ghost" data-a="link-cancel" type="button">Cancel</button></div></div>';
+  }
 
   /* Offer "approve in my Pentagon AI app" ONLY when the backend says this
      account has one. A phone or Telegram wallet is invisible to EIP-6963, so
@@ -402,7 +464,7 @@
      the ACCOUNT's wallet, so it leaves with the account. */
   function forgetAccount() {
     st.signedIn = false; st.points = null; st.pointsBlocked = false;
-    st.mm = st.penai = null; st.username = null; st.pns = null; st.pnsKnown = false; st.roaming = null; st.notice = ''; st.err = '';
+    st.mm = st.penai = null; st.username = null; st.pns = null; st.pnsKnown = false; st.infoKnown = false; st.link = ''; st.linkAck = false; st.linkErr = ''; st.justLinked = null; st.roaming = null; st.notice = ''; st.err = '';
     if (st.phone) { st.phone = false; st.acct = st.chain = st.pc = st.ethPc = st.eth = null; }
   }
   /* Sign-in and sign-out that happen OUTSIDE the pill: the host's own Log in
@@ -779,6 +841,12 @@
     + '.acct{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px;padding:0 0 10px;border-bottom:1px solid var(--pg-border,#1e2b22);font-size:13px}'
     + '.pns{display:inline-block;margin-left:4px;padding:1px 5px;border:1px solid var(--pg-accent,#00ff66);border-radius:4px;font:700 9.5px/1.3 ui-monospace,monospace;letter-spacing:.06em;color:var(--pg-accent-text,#4dff94);text-decoration:none;vertical-align:1px}'
     + '.getpns{margin-left:6px;font-size:11.5px;white-space:nowrap}'
+    + '.lk .lk-h{font-weight:700;color:var(--pg-warning,#ffc857);margin:0 0 6px}.lk .lk-a{font-size:12.5px;margin:0 0 8px}.lk .mono{font-family:ui-monospace,monospace}'
+    + '.lk p{font-size:12.5px;line-height:1.45;color:var(--pg-text-muted,#7e9486);margin:0 0 8px}.lk p b{color:var(--pg-text,#e8f5ec)}'
+    + '.ack{display:flex;align-items:center;gap:8px;width:100%;margin:4px 0 10px;padding:8px;border:1px solid var(--pg-border-strong,#2c4033);border-radius:var(--pg-radius-small,4px);background:none;color:var(--pg-text,#e8f5ec);font:600 12.5px/1.2 system-ui,sans-serif;cursor:pointer;text-align:left}'
+    + '.ack .bx{flex:none;display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border:1.5px solid var(--pg-accent,#00ff66);border-radius:3px;color:var(--pg-accent-text,#4dff94);font-size:12px}'
+    + '.ack[aria-checked="true"]{border-color:var(--pg-accent,#00ff66)}.btn[disabled]{opacity:.4;cursor:not-allowed}'
+    + '.linkbtn{background:none;border:0;padding:0;color:var(--pg-accent-text,#4dff94);font:inherit;cursor:pointer;text-decoration:underline}'
     + '.acctlink{flex-basis:100%;font-size:12px;white-space:nowrap}'
     + '.g-pns{font-size:12px;color:var(--pg-text-muted,#7e9486);margin:-2px 0 10px}.g-pns .pns{margin:0 4px 0 0}.g-pns .getpns{margin:0}'
     + '.acct b{color:var(--pg-accent-text,#4dff94)}.acct .ab{display:flex;flex-direction:column;gap:3px;min-width:0}.acct .ap{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;color:var(--pg-text,#e8f5ec)}'
@@ -879,7 +947,9 @@
       + '<a class="id" target="_blank" rel="noopener" href="' + (onEth() ? 'https://etherscan.io/address/' : 'https://explorer.pentagon.games/address/') + st.acct + '">' + shortAddr(st.acct) + ' ↗</a></div>'
       + '</div>';   // the network is named under the balance ("on Pentagon Chain") and on the pill
     var own = ownership();
-    if (own === 'other') h += '<div class="ro">Not your account’s wallet — these balances are this wallet’s. Your Points stay on your account.</div>';
+    if (st.justLinked && st.justLinked === st.acct) h += '<div class="ok">✓ Linked to your Pentagon account.</div>';
+    else if (canLink()) h += '<div class="ro">Your account has no linked wallet yet. <button class="linkbtn" data-a="link-start" type="button">Link this one…</button></div>';
+    else if (own === 'other') h += '<div class="ro">Not your account’s wallet — these balances are this wallet’s. Your Points stay on your account.</div>';
     else if (own === 'pgai' || st.phone) h += '<div class="ro">Your PGAI wallet — Pentagon Chain only.</div>';
     var rd = function (v) { return st.reading ? '…' : (v == null ? '—' : fmt(v)); };
     if (onPC()) {
@@ -926,6 +996,8 @@
     if (st.notice) h += '<div class="ro">' + esc(st.notice) + ' '
       + (HAS_LOGIN ? '<a href="' + SIGN_IN + '" data-a="signin">Log in with Pentagon</a>, or ' : '')
       + '<a href="' + HOME + '/pgai/web-local-app/?signup=1&continue=home2">create an account' + (HAS_LOGIN ? ' for it' : '') + '</a>.</div>';
+    if (st.link && st.linkAddr !== st.acct) { st.link = ''; st.linkAck = false; st.linkErr = ''; }   // wallet changed: start over
+    if (st.link) return h + linkHTML();
     if (st.signing) {
       return h + '<div class="box now"><div class="big-note">Check your wallet</div>'
         + '<div class="sub">Sign Pentagon’s login message to log in with this wallet. It is free and moves nothing. Decline and you stay connected, just not logged in.</div></div>';
@@ -1047,6 +1119,10 @@
       else if (a === 'cancel-wait') { st.pending = ''; emit(); }
       else if (a === 'disconnect') disconnect();
       else if (a === 'reread') readBalances();
+      else if (a === 'link-start') linkStart();
+      else if (a === 'link-ack') { st.linkAck = !st.linkAck; emit(); }
+      else if (a === 'link-go') linkGo();
+      else if (a === 'link-cancel') { st.link = ''; st.linkAck = false; st.linkErr = ''; emit(); }
     });
   }
   // A shadow root can't be removed, so a remount reuses it (el.__pcRoot).
@@ -1099,7 +1175,7 @@
     topUp: topUp,
     mount: function (el) { el.hasAttribute('data-pc-guide') ? mountGuide(el) : mountPill(el); },
     unmount: unmount, attach: attach, detach: detach,
-    version: '1.0.9'
+    version: '1.1.0'
   };
   window.PCConnector = api;
 
