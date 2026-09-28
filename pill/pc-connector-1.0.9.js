@@ -779,6 +779,7 @@
     + '.acct{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px;padding:0 0 10px;border-bottom:1px solid var(--pg-border,#1e2b22);font-size:13px}'
     + '.pns{display:inline-block;margin-left:4px;padding:1px 5px;border:1px solid var(--pg-accent,#00ff66);border-radius:4px;font:700 9.5px/1.3 ui-monospace,monospace;letter-spacing:.06em;color:var(--pg-accent-text,#4dff94);text-decoration:none;vertical-align:1px}'
     + '.getpns{margin-left:6px;font-size:11.5px;white-space:nowrap}'
+    + '.acctlink{flex-basis:100%;font-size:12px;white-space:nowrap}'
     + '.g-pns{font-size:12px;color:var(--pg-text-muted,#7e9486);margin:-2px 0 10px}.g-pns .pns{margin:0 4px 0 0}.g-pns .getpns{margin:0}'
     + '.acct b{color:var(--pg-accent-text,#4dff94)}.acct .ab{display:flex;flex-direction:column;gap:3px;min-width:0}.acct .ap{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;color:var(--pg-text,#e8f5ec)}'
     + '.pill .net{color:var(--pg-text-muted,#7e9486);font-weight:500}.pill .dv{width:1px;height:14px;background:var(--pg-border-strong,#2c4033)}'
@@ -942,7 +943,13 @@
       h += guideHTML();
     }
     if (st.signedIn || (st.acct && !st.attached)) {
-      h += '<div class="sep"></div><div class="foot"><span></span>'
+      /* Account settings — privacy decides what OTHER people see when they
+         look you up (pump.pentagon.games, Friends). pentagon.games/account is
+         the one address for them: the old settings page today, forwarded to
+         the Pentagon AI app's settings once it can take them (products-
+         wallet-rn SPEC §25) — this link never has to change. */
+      h += '<div class="sep"></div><div class="foot">'
+        + (st.signedIn ? '<a class="acctlink" href="' + HOME + '/account" target="_blank" rel="noopener" title="Who can see your email, wallet and socials when someone looks you up">Account &amp; privacy ↗</a>' : '') + '<span></span>'
         + (st.signedIn ? '<button class="btn ghost" data-a="signout" type="button">Sign out</button>' : '')
         + (st.acct && !st.attached ? '<button class="btn ghost" data-a="disconnect" type="button">' + (st.phone ? 'Hide' : 'Disconnect wallet') + '</button>' : '')
         + '</div>';
@@ -1092,7 +1099,7 @@
     topUp: topUp,
     mount: function (el) { el.hasAttribute('data-pc-guide') ? mountGuide(el) : mountPill(el); },
     unmount: unmount, attach: attach, detach: detach,
-    version: '1.0.8'
+    version: '1.0.9'
   };
   window.PCConnector = api;
 

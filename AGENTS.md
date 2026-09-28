@@ -122,7 +122,7 @@ Three boxes:
 1. **Account** — "Signed in as **name**", with the Points on a row below
    (pink mark, number, "Points"), and **Top up**. Logged out: "Not logged in to
    Pentagon · Log in with Pentagon".
-   - **PNS (1.0.8):** when the account has a PNS name, it is the name shown,
+   - **PNS (1.0.9):** when the account has a PNS name, it is the name shown,
      with a `PNS` tag: `Signed in as nftprof [PNS]`. With none: `Get PNS ↗`,
      opening pns.pentagon.games **in a new tab**. With no wallet connected, the
      same appears under "Hi name —".
@@ -145,6 +145,14 @@ Three boxes:
    **Disconnect wallet**.
 3. **ALSO** — the PC on the *other* chain, dimmed. It lights up when the NOW
    chain has 0 and the other chain has some, because then it matters.
+
+**Footer (signed in):** **Account & privacy ↗** opens `pentagon.games/account` in a
+new tab, on its own row above **Sign out** / **Disconnect wallet**. Privacy decides
+what *other people* see when they look you up (pump.pentagon.games, Friends).
+`/account` is the one address for account settings: the old settings page today,
+forwarded to the Pentagon AI app's settings once the app can take them
+(products-wallet-rn SPEC §25). Don't build account settings on your own site; link
+there.
 
 Signed out, with no wallet, the panel has **one Connect** plus **Log in with
 Pentagon**. Connect logs the visitor in by itself when the wallet belongs to an
@@ -171,7 +179,7 @@ before `DOMContentLoaded`.
 | `PCConnector.onChange(fn)` | Called whenever that state changes. |
 | `PCConnector.connect()` / `switchToPentagonChain()` | Open the pill's connect, or request the chain switch. |
 | `PCConnector.mount(el)` / `unmount(el)` | SPAs that re-render the nav: `unmount` before the element goes, `mount` when it is back. |
-| `PCConnector.version` | `'1.0.8'` |
+| `PCConnector.version` | `'1.0.9'` |
 
 **Event:** `window` receives `pg:auth` (`CustomEvent`, `detail.ok` /
 `detail.signedOut`) on sign-in and sign-out. Listen for it and your page state
@@ -354,8 +362,8 @@ add/switch network, and one signature of Pentagon's login message.
 ## 10. Money pages: pin a version with SRI
 
 ```html
-<script src="https://pentagon.games/connector/pc-connector-1.0.8.js"
-        integrity="sha384-odQYTRA6u8AX4U6yHPSJvdf0qZjeW26xVsnSHzLnBoTI9ELWKlNnB7lXYin34r0N"
+<script src="https://pentagon.games/connector/pc-connector-1.0.9.js"
+        integrity="sha384-V2yXKpuFh8lRoukEkJIyGrBKC22/WO9/4pY31UdrrGevzc9CkXpul/+4JsEyJisN"
         crossorigin="anonymous" data-client-id="YOUR_CLIENT_ID" defer></script>
 ```
 
