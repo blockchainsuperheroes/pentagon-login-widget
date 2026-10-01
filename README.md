@@ -20,6 +20,11 @@ Reference implementation for integrating Pentagon Games authentication into your
 > bridge and top-up caveats, adoption checklist). The pages below are reference
 > material for the pieces it is built from.
 
+> ## Points and top-up: [Top up and Points — integration guide](TOPUP-AND-POINTS.md)
+>
+> Show a user's Points and let them top up at `pentagon.games/topup`, with no
+> checkout to build: one function call (`PCConnector.topUp()`) or one link.
+
 > ## The sign-in popup alone: [Sign in with Pentagon](SIGN-IN-WITH-PENTAGON.md)
 >
 > One script, on any approved site. Your users sign in without leaving your page and you
