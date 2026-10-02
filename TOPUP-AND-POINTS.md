@@ -81,6 +81,8 @@ Optional parameters:
 |---|---|
 | `?return_url=<https URL>` | After the top-up, the page shows "Continue →" back to this URL. It is honoured **only for registered Pentagon ecosystem domains**; any other URL is ignored and the user simply gets "Done". Ask to have your domain added if you need it. URL-encode the value. |
 | `#sso_token=<ssoToken>` | Hands over the user's sign-in so they are not asked to sign in again on the top-up page. It goes in the URL **fragment** (after `#`), which browsers do not send to servers. |
+| `?points=<N>` | Makes that package the main button. `N` is one of `100`, `425`, `1000`, `2500`, `5500`; anything else is ignored and 1,000 leads. |
+| `?points=<N>&checkout=1` | **Straight to checkout.** Skips the amount screen: as soon as the account is known, the window goes to the Stripe checkout for that package, then comes back, shows delivery, and continues to `return_url` by itself. See below. |
 
 If you pass nothing, the page signs the user in itself (same Sign in with
 Pentagon card) and carries on.
@@ -88,6 +90,44 @@ Pentagon card) and carries on.
 Do **not** pass a wallet address, and do not try to choose the recipient: the
 page resolves the signed-in account's own wallet. Points always go to the
 account that is signed in on the top-up page.
+
+### Choosing the amount, and going straight to checkout
+
+Use these when your page has already told the user what they are buying
+("Roll for $5"), so Pentagon's amount screen would only be a repeat.
+
+**Pick the default amount** — the user still sees Pentagon's page, with your
+amount as the big button:
+
+```
+https://pentagon.games/topup?points=100&return_url=https%3A%2F%2Fyour.site%2Fback
+```
+
+**Straight to the card checkout** — no amount screen at all:
+
+```js
+// from a click handler
+const url = 'https://pentagon.games/topup?points=100&checkout=1'
+          + '&return_url=' + encodeURIComponent('https://your.site/back')
+          + (ssoToken ? '#sso_token=' + encodeURIComponent(ssoToken) : '');
+PCConnector.topUp(url);            // or: window.open(url, 'pg-topup', 'width=520,height=760')
+```
+
+What happens: the window opens the Stripe checkout for that package, the user
+pays, the window shows "payment → delivering → done" (about a minute), then goes
+to your `return_url`. If they cancel at Stripe they land on the amount list with
+"nothing was charged".
+
+Rules that keep this safe, so you know what to expect:
+
+- Your page must have shown the price and the amount before sending the user.
+  Check the current price in the catalogue (`payments.pentagon.games/api/topup/packages`)
+  rather than hard-coding it.
+- The user must be signed in on the top-up page. Pass `#sso_token=` to avoid a
+  second sign-in; otherwise the sign-in card shows first and checkout follows.
+- It runs once per visit. Coming back with the browser's Back button shows the
+  amount list rather than starting a second checkout.
+- `checkout=1` without a valid `points` does nothing.
 
 ## 3. What the user sees
 
