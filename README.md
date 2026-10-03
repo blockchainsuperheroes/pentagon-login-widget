@@ -1,6 +1,15 @@
-# Pentagon Login Widget
+# Pentagon Login Pill
 
-Reference implementation for integrating Pentagon Games authentication into your app.
+**Pentagon Identity login is now the pill.** Every site that signs people in
+with a Pentagon account, third-party sites and Pentagon's own apps alike, uses
+the pill below. The old approach this repo used to document (build your own
+login form against the Identity API) is kept further down as **legacy
+reference** for server-side and CLI use only.
+
+| Was | Now |
+|---|---|
+| Pentagon Identity login: your own form calling `POST /user/login` | The pill: `pc-connector.js` with your `data-client-id` |
+| Separate "sign in with wallet" and balance widgets | One component: sign-in, Points, and an optional connected wallet |
 
 > # ⬠ THE STANDARD: [Pentagon Games Identity Standard — the login pill](PENTAGON-LOGIN-STANDARD.md)
 >
@@ -40,7 +49,14 @@ Reference implementation for integrating Pentagon Games authentication into your
 > recommended path for a website** — see the standard above. It remains correct
 > for server-side and CLI integrations, which have no browser to show a pill in.
 
-**Do NOT redirect users to pentagon.games/sign-in.** Build your login form inside your app and call the Pentagon Identity API directly.
+---
+
+## Legacy reference: the old Pentagon Identity login (server-side / CLI only)
+
+> Not for websites any more: use the pill above. This section documents the
+> Identity API calls the pill is built on, for integrations with no browser.
+
+For these non-browser integrations, call the Pentagon Identity API directly.
 
 ## Sign-In Methods
 
